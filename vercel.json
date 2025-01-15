@@ -11,10 +11,5 @@
             "src": "/api/webhook",
             "dest": "api/webhook.py"
         }
-    ],
-    "functions": {
-        "api/webhook.py": {
-            "includeFiles": "src/bot/**"
-        }
-    }
+    ]
 } 

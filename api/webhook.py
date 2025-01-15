@@ -1,11 +1,3 @@
-import sys
-import os
-from pathlib import Path
-
-# Добавляем корневую директорию проекта в PYTHONPATH
-root_dir = str(Path(__file__).parent.parent)
-sys.path.append(root_dir)
-
 from fastapi import FastAPI, Request
 from loguru import logger
 from .bot_init import process_update
