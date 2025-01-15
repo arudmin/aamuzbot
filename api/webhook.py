@@ -1,19 +1,29 @@
-from http.server import HTTPServer
+from fastapi import FastAPI, Request
 from bot.web.app import init_app
 from bot.config.config import config
+from loguru import logger
 
-# Инициализируем приложение
-app = init_app()
+# Инициализируем FastAPI
+app = FastAPI()
 
-# Обработчик для Vercel
-async def handler(request):
-    if request.method == 'POST':
+# Инициализируем бота
+bot_app = init_app()
+
+@app.post("/api/webhook")
+async def webhook_handler(request: Request):
+    """
+    Обработчик вебхуков от Telegram.
+    """
+    try:
         # Получаем данные запроса
-        body = await request.json()
+        update_data = await request.json()
+        logger.info(f"Получен update: {update_data}")
         
         # Обрабатываем update от Telegram
-        await app['bot'].process_update(body)
+        await bot_app['bot'].process_update(update_data)
         
-        return {'statusCode': 200, 'body': 'OK'}
+        return {"status": "ok"}
         
-    return {'statusCode': 405, 'body': 'Method not allowed'} 
+    except Exception as e:
+        logger.error(f"Ошибка при обработке вебхука: {e}", exc_info=True)
+        return {"status": "error", "message": str(e)} 
