@@ -7,15 +7,16 @@ readme = "README.md"
 packages = [{include = "bot", from = "src"}]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.10"
 aiogram = "^3.3.0"
 python-dotenv = "^1.0.0"
 pydantic = "^2.5.0"
 pydantic-settings = "^2.1.0"
-loguru = "^0.7.0"
-pyngrok = "^7.0.5"
+loguru = "^0.7.2"
+pyngrok = "^7.0.3"
 yandex-music = "^2.1.1"
 mutagen = "^1.47.0"
+aiofiles = "^23.2.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.0"

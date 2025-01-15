@@ -44,6 +44,7 @@ async def _download_and_send(message: Message, track_id: str, status_message: Op
         track_id: ID трека в Яндекс.Музыке
         status_message: Сообщение со статусом загрузки
     """
+    temp_path = None
     try:
         # Получаем информацию о треке
         track_info = await music_service.get_track_full_info(track_id)
@@ -69,38 +70,57 @@ async def _download_and_send(message: Message, track_id: str, status_message: Op
         temp_path = f"/tmp/{filename}"
         
         # Скачиваем файл
-        await music_service.download_track(download_url, temp_path)
+        if not await music_service.download_track(download_url, temp_path):
+            await status_message.edit_text(f"❌ Ошибка при скачивании трека {track_str}")
+            return
         
         # Обновляем статус
         await status_message.edit_text(f"📝 Устанавливаю метаданные для {track_str}...")
         
         # Устанавливаем метаданные
-        await music_service.set_track_metadata(temp_path, track_info)
+        if not await music_service.set_track_metadata(temp_path, track_info):
+            logger.warning(f"Не удалось установить метаданные для {track_str}")
         
         # Обновляем статус
         await status_message.edit_text(f"📤 Отправляю файл {track_str}...")
         
+        # Проверяем существование файла
+        if not os.path.exists(temp_path):
+            await status_message.edit_text(f"❌ Ошибка: файл не найден {track_str}")
+            return
+            
         # Отправляем файл
-        audio = FSInputFile(temp_path)
-        await message.answer_audio(
-            audio,
-            title=track_info['title'],
-            performer=", ".join(track_info['artists']),
-            duration=track_info['duration_ms'] // 1000
-        )
-        
-        # Удаляем временный файл
-        os.remove(temp_path)
-        logger.debug(f"Временный файл {temp_path} удален")
-        
-        # Обновляем статус
-        await status_message.edit_text(f"✅ Трек {track_str} успешно загружен!")
-        
+        try:
+            audio = FSInputFile(temp_path)
+            await message.answer_audio(
+                audio,
+                title=track_info['title'],
+                performer=", ".join(track_info['artists']),
+                duration=track_info['duration_ms'] // 1000
+            )
+            
+            # Обновляем статус
+            await status_message.edit_text(f"✅ Трек {track_str} успешно загружен!")
+            
+        except Exception as e:
+            error_msg = f"❌ Ошибка при отправке файла {track_str}: {str(e)}"
+            logger.error(error_msg, exc_info=True)
+            await status_message.edit_text(error_msg)
+            
     except Exception as e:
-        error_msg = f"❌ Ошибка при скачивании трека {track_str}: {str(e)}"
+        error_msg = f"❌ Ошибка при скачивании трека {track_str if 'track_str' in locals() else track_id}: {str(e)}"
         logger.error(error_msg, exc_info=True)
         if status_message:
             await status_message.edit_text(error_msg)
+            
+    finally:
+        # Удаляем временный файл
+        if temp_path and os.path.exists(temp_path):
+            try:
+                os.remove(temp_path)
+                logger.debug(f"Временный файл {temp_path} удален")
+            except Exception as e:
+                logger.error(f"Ошибка при удалении временного файла {temp_path}: {e}")
 
 
 def sanitize_filename(filename: str) -> str:

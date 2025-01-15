@@ -9,7 +9,12 @@ from yandex_music import ClientAsync
 from loguru import logger
 from bot.config.config import config
 import asyncio
+import aiohttp
+import aiofiles
 from typing import List, Dict, Optional, Union
+import mutagen
+from mutagen.easyid3 import EasyID3
+from concurrent.futures import ThreadPoolExecutor
 
 
 class MusicService:
@@ -19,6 +24,7 @@ class MusicService:
         else:
             self.client = client
         self._initialized = False
+        self._executor = ThreadPoolExecutor(max_workers=4)
         logger.info("Клиент Яндекс.Музыки создан")
 
     async def ensure_initialized(self):
@@ -27,6 +33,77 @@ class MusicService:
             await self.client.init()
             self._initialized = True
             logger.info("Клиент Яндекс.Музыки инициализирован")
+
+    async def download_track(self, download_url: str, output_path: str) -> bool:
+        """
+        Асинхронно скачивает трек по прямой ссылке.
+        
+        Args:
+            download_url: Прямая ссылка на скачивание
+            output_path: Путь для сохранения файла
+            
+        Returns:
+            True если скачивание успешно, False в случае ошибки
+        """
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(download_url) as response:
+                    if response.status != 200:
+                        logger.error(f"Ошибка при скачивании: HTTP {response.status}")
+                        return False
+                        
+                    async with aiofiles.open(output_path, 'wb') as f:
+                        async for chunk in response.content.iter_chunked(8192):
+                            await f.write(chunk)
+                            
+            logger.info(f"Трек успешно скачан в {output_path}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Ошибка при скачивании трека: {e}", exc_info=True)
+            return False
+
+    async def set_track_metadata(self, file_path: str, track_info: Dict) -> bool:
+        """
+        Асинхронно устанавливает метаданные MP3 файла.
+        
+        Args:
+            file_path: Путь к MP3 файлу
+            track_info: Словарь с информацией о треке
+            
+        Returns:
+            True если метаданные установлены успешно, False в случае ошибки
+        """
+        try:
+            # Выполняем операции с метаданными в отдельном потоке
+            def set_metadata():
+                try:
+                    # Пробуем открыть как ID3
+                    audio = EasyID3(file_path)
+                except mutagen.id3.ID3NoHeaderError:
+                    # Если нет ID3 тега, создаем его
+                    audio = mutagen.File(file_path, easy=True)
+                    if audio is None:
+                        audio = EasyID3()
+                        audio.save(file_path)
+                    
+                # Устанавливаем метаданные
+                audio['title'] = track_info['title']
+                audio['artist'] = track_info['artists']
+                audio.save(file_path)
+                
+            # Запускаем в thread pool
+            await asyncio.get_event_loop().run_in_executor(
+                self._executor,
+                set_metadata
+            )
+            
+            logger.info(f"Метаданные успешно установлены для {file_path}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Ошибка при установке метаданных: {e}", exc_info=True)
+            return False
 
     async def search_track(self, query: str, limit: int = 5, fetch_download_info: bool = True) -> List[Dict]:
         try:
