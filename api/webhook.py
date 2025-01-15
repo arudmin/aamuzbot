@@ -33,13 +33,13 @@ async def handle_message(message: Message):
         
         if message.text == "/start":
             logger.info("Processing /start command from user {}", message.from_user.id)
-            await message.answer("Привет! Я бот для поиска и скачивания музыки. Используй инлайн режим для поиска.")
+            await message.answer("Привет! Я бот для поиска и скачивания музыки. Используй инлайн режим для поиска.", bot=bot)
             logger.info("Welcome message sent to user {}", message.from_user.id)
         
     except Exception as e:
         logger.exception("Error in message handler: {}", str(e))
         try:
-            await message.answer("Произошла ошибка при обработке сообщения. Попробуйте позже.")
+            await message.answer("Произошла ошибка при обработке сообщения. Попробуйте позже.", bot=bot)
         except:
             logger.exception("Failed to send error message to user")
 
@@ -132,13 +132,23 @@ async def webhook_handler(request: Request):
         update = Update(**update_data)
         logger.info("Update object created successfully")
         
-        # Process Telegram update
-        logger.debug("Starting update processing")
-        await dp.feed_update(bot=bot, update=update)
-        logger.info("Update processed successfully")
+        # Create new event loop for processing update
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         
-        return {"status": "ok"}
-        
+        try:
+            # Process Telegram update
+            logger.debug("Starting update processing")
+            await dp.feed_update(bot=bot, update=update)
+            logger.info("Update processed successfully")
+            
+            return {"status": "ok"}
+            
+        finally:
+            # Clean up the event loop
+            loop.stop()
+            loop.close()
+            
     except Exception as e:
         logger.exception("Error processing webhook: {}", str(e))
         return {"status": "error", "message": str(e)} 
