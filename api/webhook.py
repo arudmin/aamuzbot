@@ -7,9 +7,8 @@ root_dir = str(Path(__file__).parent.parent)
 sys.path.append(root_dir)
 
 from fastapi import FastAPI, Request
-from src.bot.web.app import init_app
-from src.bot.config.config import config
 from loguru import logger
+from .bot_init import process_update
 
 # Настраиваем логирование
 logger.add("/tmp/bot.log", rotation="1 MB")
@@ -17,15 +16,12 @@ logger.add("/tmp/bot.log", rotation="1 MB")
 # Инициализируем FastAPI
 app = FastAPI()
 
-# Инициализируем бота
-bot_app = init_app()
-
 @app.get("/api/webhook")
 async def health_check():
     """
     Проверка работоспособности сервиса.
     """
-    return {"status": "ok", "environment": config.bot_env}
+    return {"status": "ok"}
 
 @app.post("/api/webhook")
 async def webhook_handler(request: Request):
@@ -38,7 +34,7 @@ async def webhook_handler(request: Request):
         logger.info(f"Получен update: {update_data}")
         
         # Обрабатываем update от Telegram
-        await bot_app['bot'].process_update(update_data)
+        await process_update(update_data)
         
         return {"status": "ok"}
         
