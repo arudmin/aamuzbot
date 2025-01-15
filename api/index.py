@@ -1,29 +1,16 @@
 from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
-from aiogram import Bot, Dispatcher
-from aiogram.types import Update
-from api.bot_init import process_update
+import sys
 import os
+
+# Добавляем путь к корневой директории проекта
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Настраиваем логирование
 logger.add("/tmp/bot.log", rotation="1 MB")
 
 # Инициализируем FastAPI
 app = FastAPI()
-
-# Настраиваем CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Инициализируем бота
-bot = Bot(token=os.getenv("BOT_TOKEN"))
-dp = Dispatcher()
 
 @app.get("/api/webhook")
 async def health_check():
@@ -42,11 +29,9 @@ async def webhook_handler(request: Request):
         update_data = await request.json()
         logger.info(f"Получен update: {update_data}")
         
-        # Создаем объект Update из полученных данных
-        update = Update(**update_data)
-        
         # Обрабатываем update от Telegram
-        await dp.feed_update(bot=bot, update=update)
+        from src.bot.web.app import process_update
+        await process_update(update_data)
         
         return {"status": "ok"}
         
