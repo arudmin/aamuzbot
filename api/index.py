@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 from api.bot_init import process_update
 
@@ -7,6 +8,15 @@ logger.add("/tmp/bot.log", rotation="1 MB")
 
 # Инициализируем FastAPI
 app = FastAPI()
+
+# Настраиваем CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/api/webhook")
 async def health_check():
