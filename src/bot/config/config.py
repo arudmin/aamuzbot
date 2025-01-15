@@ -4,74 +4,43 @@
 Этот модуль содержит настройки для работы бота в разных окружениях (dev/prod).
 """
 
+from pydantic_settings import BaseSettings
+from typing import Optional
 import os
-from pydantic import BaseModel
-from pyngrok import ngrok
-from loguru import logger
 
 
-class Settings(BaseModel):
+class Settings(BaseSettings):
     """Настройки бота."""
     # Основные настройки
     bot_token: str
-    webhook_host: str = ""
-    webhook_path: str = "/webhook"
-    webapp_host: str = "0.0.0.0"
-    webapp_port: int = 8000
+    bot_env: str = "dev"  # dev или prod
+    
+    # Настройки для разработки
+    ngrok_auth_token: Optional[str] = None
+    ngrok_tunnel_url: Optional[str] = None
+    
+    # Настройки для продакшена
+    webhook_host: Optional[str] = None  # URL в формате https://your-app.vercel.app
     
     # Настройки Яндекс.Музыки
     yandex_music_token: str
     
-    # Настройки окружения
-    environment: str = "dev"  # dev или prod
-    
-    # Настройки ngrok (только для dev)
-    ngrok_auth_token: str = ""
-    _ngrok_tunnel: object = None
-    
     @property
-    def is_dev(self) -> bool:
-        """Проверяет, запущен ли бот в dev режиме."""
-        return self.environment.lower() == "dev"
-    
+    def is_prod(self) -> bool:
+        """Проверяет, запущен ли бот в production режиме."""
+        return self.bot_env.lower() == "prod"
+        
     @property
-    def webhook_url(self) -> str:
-        """Возвращает полный URL для вебхука."""
-        return f"{self.webhook_host}{self.webhook_path}"
-    
-    def setup_ngrok(self) -> None:
-        """
-        Настраивает ngrok туннель для локальной разработки.
-        Вызывается только в dev режиме.
-        """
-        if not self.is_dev:
-            return
-            
-        if self.ngrok_auth_token:
-            ngrok.set_auth_token(self.ngrok_auth_token)
+    def webhook_url(self) -> Optional[str]:
+        """Возвращает URL для вебхука."""
+        if self.is_prod and self.webhook_host:
+            return f"{self.webhook_host}/api/webhook"
+        return self.ngrok_tunnel_url
         
-        # Создаем туннель
-        self._ngrok_tunnel = ngrok.connect(self.webapp_port)
-        tunnel_url = self._ngrok_tunnel.public_url
-        
-        if tunnel_url.startswith("http://"):
-            tunnel_url = tunnel_url.replace("http://", "https://")
-            
-        self.webhook_host = tunnel_url
-        logger.info(f"Ngrok tunnel established: {self.webhook_host}")
-    
-    def cleanup(self) -> None:
-        """Очищает ресурсы при завершении работы."""
-        if self.is_dev and self._ngrok_tunnel:
-            ngrok.disconnect(self._ngrok_tunnel.public_url)
-            ngrok.kill()
+    class Config:
+        env_file = ".env"
+        env_file_encoding = "utf-8"
 
 
-# Загружаем настройки из переменных окружения
-config = Settings(
-    bot_token=os.getenv("BOT_TOKEN", ""),
-    yandex_music_token=os.getenv("YANDEX_MUSIC_TOKEN", ""),
-    environment=os.getenv("BOT_ENV", "dev"),
-    ngrok_auth_token=os.getenv("NGROK_AUTH_TOKEN", ""),
-    webhook_host=os.getenv("WEBHOOK_HOST", ""),  # Используется только в prod
-)
+# Создаем экземпляр конфигурации
+config = Settings()

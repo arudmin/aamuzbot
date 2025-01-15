@@ -43,12 +43,33 @@ cp .env.example .env
 BOT_ENV=dev poetry run bot
 ```
 
-### Продакшн режим (prod)
+### Продакшн режим на Vercel (prod)
 
-В продакшн режиме бот использует указанный WEBHOOK_HOST (например, на Vercel):
+1. Создайте аккаунт на [Vercel](https://vercel.com) если еще нет
 
+2. Установите Vercel CLI:
 ```bash
-BOT_ENV=prod poetry run bot
+npm i -g vercel
+```
+
+3. Залогиньтесь в Vercel:
+```bash
+vercel login
+```
+
+4. Настройте проект на Vercel:
+   - Подключите GitHub репозиторий через веб-интерфейс Vercel
+   - В настройках проекта добавьте переменные окружения:
+     - `BOT_TOKEN` - токен вашего Telegram бота
+     - `YANDEX_MUSIC_TOKEN` - токен Яндекс.Музыки
+     - `BOT_ENV=prod` - режим работы
+     - `WEBHOOK_HOST` - URL вашего приложения на Vercel (например, https://your-app.vercel.app)
+
+5. Деплой произойдет автоматически после пуша в репозиторий
+
+6. Установите вебхук для бота:
+```bash
+curl -X POST https://api.telegram.org/bot<BOT_TOKEN>/setWebhook -H "Content-Type: application/json" -d '{"url": "https://your-app.vercel.app/api/webhook"}'
 ```
 
 ## Структура проекта
