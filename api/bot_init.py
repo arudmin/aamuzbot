@@ -43,8 +43,8 @@ async def process_update(update_data: dict):
     """Обработка обновления от Telegram."""
     bot, dp = init_bot()
     try:
-        # Создаем объект Update из словаря
-        update = Update.model_validate(update_data)
+        # Создаем объект Update из словаря с контекстом бота
+        update = Update.model_validate(update_data, context={"bot": bot})
         # Передаем update в диспетчер
         await dp.feed_update(bot=bot, update=update)
     finally:
