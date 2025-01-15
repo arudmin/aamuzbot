@@ -1,20 +1,18 @@
 {
   "version": 2,
-  "functions": {
-    "api/webhook.py": {
-      "memory": 1024,
-      "maxDuration": 10
+  "builds": [
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python"
     }
-  },
+  ],
   "routes": [
     {
-      "src": "/webhook",
-      "dest": "/api/webhook.py",
-      "methods": ["POST", "GET"]
+      "src": "/api/webhook",
+      "dest": "api/index.py"
     }
   ],
   "env": {
     "BOT_ENV": "prod"
-  },
-  "excludes": ["tests/**", "**/*.test.*", "**/__tests__/**"]
+  }
 } 
