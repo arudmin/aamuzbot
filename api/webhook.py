@@ -120,10 +120,18 @@ async def webhook_handler(request: Request):
         update = Update(**update_data)
         logger.info("Update object created successfully")
         
-        # Process Telegram update
-        logger.debug("Starting update processing")
-        await dp.feed_update(bot=bot, update=update)
-        logger.info("Update processed successfully")
+        # Create new event loop for processing update
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        try:
+            # Process Telegram update
+            logger.debug("Starting update processing")
+            await dp.feed_update(bot=bot, update=update)
+            logger.info("Update processed successfully")
+        finally:
+            # Clean up the event loop
+            loop.close()
         
         return {"status": "ok"}
         
