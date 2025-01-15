@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "aamuzbot"
-version = "0.1.0"
+version = "0.2.0"
 description = "Telegram bot with webhooks using aiogram"
 authors = ["Your Name <your.email@example.com>"]
 readme = "README.md"
