@@ -4,15 +4,23 @@ from aiohttp import web
 from pydantic_settings import BaseSettings
 from typing import Optional
 import os
-from aiogram.types import Update, Message
-from aiogram.filters import Command
+import sys
+from aiogram.types import Update
+
+# Добавляем путь к исходникам бота
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from src.bot.routers.base import base_router
+from src.bot.routers.music import music_router
+from src.bot.routers.inline import inline_router
+from src.bot.config.config import config as bot_config
 
 class Settings(BaseSettings):
-    bot_token: str
+    bot_token: str = bot_config.bot_token
     bot_env: str = "prod"
     webhook_host: Optional[str] = None
     webhook_secret: Optional[str] = None
-    yandex_music_token: str
+    yandex_music_token: str = bot_config.yandex_music_token
     
     @property
     def webhook_url(self) -> Optional[str]:
@@ -32,10 +40,10 @@ def init_bot():
     bot = Bot(token=config.bot_token)
     dp = Dispatcher()
     
-    # Регистрируем обработчики
-    @dp.message(Command("start"))
-    async def cmd_start(message: Message):
-        await message.answer("Привет! Я бот для поиска и скачивания музыки. Используй инлайн режим для поиска.")
+    # Регистрируем существующие роутеры
+    dp.include_router(base_router)
+    dp.include_router(music_router)
+    dp.include_router(inline_router)
     
     return bot, dp
 
