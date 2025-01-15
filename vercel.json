@@ -15,5 +15,6 @@
   ],
   "env": {
     "BOT_ENV": "prod"
-  }
+  },
+  "excludes": ["tests/**", "**/*.test.*", "**/__tests__/**"]
 } 
