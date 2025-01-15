@@ -21,8 +21,8 @@ logger.add(
 
 # Initialize bot and dispatcher
 logger.info("Initializing bot with token length: {}", len(os.getenv("BOT_TOKEN", "")))
-bot = Bot(token=os.getenv("BOT_TOKEN"))
-dp = Dispatcher()
+bot = None
+dp = None
 
 # Register handlers
 @dp.message()
@@ -64,9 +64,18 @@ async def lifespan(app: FastAPI):
     """
     Application lifecycle management
     """
+    global bot, dp
     try:
-        # Configure webhook on startup
+        # Initialize bot and dispatcher on startup
         logger.info("Starting application lifecycle...")
+        bot = Bot(token=os.getenv("BOT_TOKEN"))
+        dp = Dispatcher()
+        
+        # Register handlers
+        dp.message.register(handle_message)
+        dp.inline_query.register(handle_inline_query)
+        
+        # Configure webhook
         webhook_url = os.getenv("WEBHOOK_URL")
         if webhook_url:
             logger.info("Setting webhook URL: {}", webhook_url)
@@ -82,8 +91,11 @@ async def lifespan(app: FastAPI):
         logger.exception("Error in application lifecycle: {}", str(e))
         raise
     finally:
+        # Clean up resources
         logger.info("Cleaning up resources...")
-        await bot.session.close()
+        if bot:
+            session = await bot.get_session()
+            await session.close()
         logger.info("Cleanup completed")
 
 # Initialize FastAPI with lifecycle manager
@@ -120,18 +132,10 @@ async def webhook_handler(request: Request):
         update = Update(**update_data)
         logger.info("Update object created successfully")
         
-        # Create new event loop for processing update
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        
-        try:
-            # Process Telegram update
-            logger.debug("Starting update processing")
-            await dp.feed_update(bot=bot, update=update)
-            logger.info("Update processed successfully")
-        finally:
-            # Clean up the event loop
-            loop.close()
+        # Process Telegram update
+        logger.debug("Starting update processing")
+        await dp.feed_update(bot=bot, update=update)
+        logger.info("Update processed successfully")
         
         return {"status": "ok"}
         
