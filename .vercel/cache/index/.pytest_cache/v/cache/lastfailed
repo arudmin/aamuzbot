@@ -1,0 +1,8 @@
+{
+  "tests/test_downloader.py::test_download_and_send_track_success": true,
+  "tests/test_downloader.py::test_download_and_send_track_http_error": true,
+  "tests/test_music_service.py::test_search_track_success": true,
+  "tests/test_music_service.py::test_search_track_no_download_info": true,
+  "tests/test_music_service.py::test_get_track_download_info_success": true,
+  "tests/test_music_service.py::test_get_track_download_info_no_info": true
+}
