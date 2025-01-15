@@ -2,18 +2,21 @@
     "version": 2,
     "builds": [
         {
-            "src": "api/index.py",
+            "src": "api/webhook.py",
             "use": "@vercel/python"
         }
     ],
     "routes": [
         {
             "src": "/api/webhook",
-            "dest": "api/index.py",
-            "methods": ["POST"],
+            "dest": "api/webhook.py",
+            "methods": ["POST", "GET"],
             "headers": {
-                "Access-Control-Allow-Origin": "*"
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type"
             }
         }
-    ]
+    ],
+    "public": true
 } 
