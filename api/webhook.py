@@ -4,7 +4,6 @@ from loguru import logger
 from aiogram import Bot, Dispatcher
 from aiogram.types import Update, Message, InlineQuery
 import os
-import asyncio
 
 # Настраиваем логирование
 logger.add("/tmp/bot.log", rotation="1 MB")
@@ -26,7 +25,7 @@ bot = Bot(token=os.getenv("BOT_TOKEN"))
 dp = Dispatcher()
 
 @dp.message()
-async def handle_message(message: Message):
+async def handle_message(message: Message, bot: Bot):
     """
     Обработчик всех сообщений.
     """
@@ -39,13 +38,12 @@ async def handle_message(message: Message):
         logger.error(f"Ошибка при обработке сообщения: {e}", exc_info=True)
 
 @dp.inline_query()
-async def handle_inline_query(query: InlineQuery):
+async def handle_inline_query(query: InlineQuery, bot: Bot):
     """
     Обработчик инлайн запросов.
     """
     try:
         logger.info(f"Получен инлайн запрос: {query.query}")
-        # Заглушка для инлайн режима
         await query.answer(
             results=[],
             switch_pm_text="Поиск музыки",
@@ -75,16 +73,8 @@ async def webhook_handler(request: Request):
         # Создаем объект Update из полученных данных
         update = Update(**update_data)
         
-        # Создаем новый event loop для обработки update
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        
-        try:
-            # Обрабатываем update от Telegram
-            loop.run_until_complete(dp.feed_update(bot=bot, update=update))
-        finally:
-            # Закрываем loop после обработки
-            loop.close()
+        # Обрабатываем update от Telegram напрямую через диспетчер
+        results = await dp.feed_raw_update(bot=bot, update=update_data)
         
         return {"status": "ok"}
         

@@ -24,6 +24,26 @@ app.add_middleware(
 bot = Bot(token=os.getenv("BOT_TOKEN"))
 dp = Dispatcher()
 
+@app.on_event("startup")
+async def startup():
+    """
+    Инициализация бота при запуске приложения.
+    """
+    logger.info("Инициализация бота...")
+    await bot.delete_webhook(drop_pending_updates=True)
+    webhook_url = os.getenv("WEBHOOK_URL")
+    if webhook_url:
+        await bot.set_webhook(url=webhook_url)
+        logger.info(f"Установлен webhook: {webhook_url}")
+
+@app.on_event("shutdown")
+async def shutdown():
+    """
+    Корректное завершение работы бота.
+    """
+    logger.info("Завершение работы бота...")
+    await bot.session.close()
+
 @dp.message()
 async def handle_message(message: Message):
     """
@@ -44,7 +64,6 @@ async def handle_inline_query(query: InlineQuery):
     """
     try:
         logger.info(f"Получен инлайн запрос: {query.query}")
-        # Заглушка для инлайн режима
         await query.answer(
             results=[],
             switch_pm_text="Поиск музыки",
