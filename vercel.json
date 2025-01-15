@@ -1,20 +1,19 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "Dockerfile",
-      "use": "@vercel/docker"
+  "functions": {
+    "api/webhook.py": {
+      "memory": 1024,
+      "maxDuration": 10
     }
-  ],
+  },
   "routes": [
     {
       "src": "/webhook",
-      "dest": "http://localhost:8000/webhook",
+      "dest": "/api/webhook.py",
       "methods": ["POST", "GET"]
     }
   ],
   "env": {
-    "BOT_ENV": "prod",
-    "PORT": "8000"
+    "BOT_ENV": "prod"
   }
 } 
