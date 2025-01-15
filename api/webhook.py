@@ -1,13 +1,31 @@
+import sys
+import os
+from pathlib import Path
+
+# Добавляем корневую директорию проекта в PYTHONPATH
+root_dir = str(Path(__file__).parent.parent)
+sys.path.append(root_dir)
+
 from fastapi import FastAPI, Request
-from bot.web.app import init_app
-from bot.config.config import config
+from src.bot.web.app import init_app
+from src.bot.config.config import config
 from loguru import logger
+
+# Настраиваем логирование
+logger.add("/tmp/bot.log", rotation="1 MB")
 
 # Инициализируем FastAPI
 app = FastAPI()
 
 # Инициализируем бота
 bot_app = init_app()
+
+@app.get("/api/webhook")
+async def health_check():
+    """
+    Проверка работоспособности сервиса.
+    """
+    return {"status": "ok", "environment": config.bot_env}
 
 @app.post("/api/webhook")
 async def webhook_handler(request: Request):
