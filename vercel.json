@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "buildCommand": "chmod +x api/vercel-build.sh && ./api/vercel-build.sh",
   "builds": [
     {
       "src": "api/index.py",
