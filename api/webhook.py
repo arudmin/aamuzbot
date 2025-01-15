@@ -11,8 +11,9 @@ from contextlib import asynccontextmanager
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
-# Configure logging
-logger.add("/tmp/bot.log", rotation="1 MB", enqueue=True)
+# Configure logging to use stderr
+logger.remove()  # Remove default handler
+logger.add(sys.stderr, level="INFO")
 
 # Initialize bot and dispatcher
 bot = Bot(token=os.getenv("BOT_TOKEN"))
