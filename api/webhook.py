@@ -5,101 +5,17 @@ from aiogram import Bot, Dispatcher
 from aiogram.types import Update, Message, InlineQuery
 import os
 import sys
-import asyncio
-from contextlib import asynccontextmanager
 
-# Add project root to path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-
-# Configure logging to use stderr with more detailed format
-logger.remove()  # Remove default handler
+# Configure logging
+logger.remove()
 logger.add(
     sys.stderr,
     level="DEBUG",
     format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
 )
 
-# Initialize bot and dispatcher
-logger.info("Initializing bot with token length: {}", len(os.getenv("BOT_TOKEN", "")))
-bot = None
-dp = None
-
-# Register handlers
-@dp.message()
-async def handle_message(message: Message):
-    try:
-        logger.info("Message handler called with text: {}", message.text)
-        logger.debug("Full message object: {}", message)
-        
-        if message.text == "/start":
-            logger.info("Processing /start command from user {}", message.from_user.id)
-            await message.answer("Привет! Я бот для поиска и скачивания музыки. Используй инлайн режим для поиска.", bot=bot)
-            logger.info("Welcome message sent to user {}", message.from_user.id)
-        
-    except Exception as e:
-        logger.exception("Error in message handler: {}", str(e))
-        try:
-            await message.answer("Произошла ошибка при обработке сообщения. Попробуйте позже.", bot=bot)
-        except:
-            logger.exception("Failed to send error message to user")
-
-@dp.inline_query()
-async def handle_inline_query(query: InlineQuery):
-    try:
-        logger.info("Inline query handler called with query: {}", query.query)
-        logger.debug("Full inline query object: {}", query)
-        
-        await query.answer(
-            results=[],
-            switch_pm_text="Поиск музыки",
-            switch_pm_parameter="search"
-        )
-        logger.info("Inline query response sent to user {}", query.from_user.id)
-        
-    except Exception as e:
-        logger.exception("Error in inline query handler: {}", str(e))
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """
-    Application lifecycle management
-    """
-    global bot, dp
-    try:
-        # Initialize bot and dispatcher on startup
-        logger.info("Starting application lifecycle...")
-        bot = Bot(token=os.getenv("BOT_TOKEN"))
-        dp = Dispatcher()
-        
-        # Register handlers
-        dp.message.register(handle_message)
-        dp.inline_query.register(handle_inline_query)
-        
-        # Configure webhook
-        webhook_url = os.getenv("WEBHOOK_URL")
-        if webhook_url:
-            logger.info("Setting webhook URL: {}", webhook_url)
-            await bot.delete_webhook(drop_pending_updates=True)
-            await bot.set_webhook(url=webhook_url)
-            logger.info("Webhook successfully set")
-        else:
-            logger.warning("No webhook URL provided")
-        
-        yield
-        
-    except Exception as e:
-        logger.exception("Error in application lifecycle: {}", str(e))
-        raise
-    finally:
-        # Clean up resources
-        logger.info("Cleaning up resources...")
-        if bot:
-            session = await bot.get_session()
-            await session.close()
-        logger.info("Cleanup completed")
-
-# Initialize FastAPI with lifecycle manager
-app = FastAPI(lifespan=lifespan)
+# Initialize FastAPI
+app = FastAPI()
 
 # Configure CORS
 app.add_middleware(
@@ -110,45 +26,56 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Initialize bot and dispatcher
+TOKEN = os.getenv("BOT_TOKEN")
+bot = Bot(token=TOKEN)
+dp = Dispatcher()
+
+@dp.message()
+async def handle_message(message: Message):
+    try:
+        if message.text == "/start":
+            await message.answer("Привет! Я бот для поиска и скачивания музыки. Используй инлайн режим для поиска.")
+    except Exception as e:
+        logger.exception(f"Error in message handler: {e}")
+        await message.answer("Произошла ошибка при обработке сообщения. Попробуйте позже.")
+
+@dp.inline_query()
+async def handle_inline_query(query: InlineQuery):
+    try:
+        await query.answer(
+            results=[],
+            switch_pm_text="Поиск музыки",
+            switch_pm_parameter="search"
+        )
+    except Exception as e:
+        logger.exception(f"Error in inline query handler: {e}")
+
+@app.on_event("startup")
+async def on_startup():
+    webhook_url = os.getenv("WEBHOOK_URL")
+    if webhook_url:
+        await bot.delete_webhook(drop_pending_updates=True)
+        await bot.set_webhook(url=webhook_url)
+        logger.info(f"Webhook set to {webhook_url}")
+
+@app.on_event("shutdown")
+async def on_shutdown():
+    await bot.session.close()
+    logger.info("Bot session closed")
+
 @app.get("/api/webhook")
 async def health_check():
-    """
-    Service health check endpoint.
-    """
     return {"status": "ok"}
 
 @app.post("/api/webhook")
 async def webhook_handler(request: Request):
-    """
-    Telegram webhook handler.
-    """
+    """Process Telegram update"""
     try:
-        # Get request data
         update_data = await request.json()
-        logger.info("Received webhook update: {}", update_data)
-        
-        # Create Update object from received data
-        logger.debug("Creating Update object from data")
         update = Update(**update_data)
-        logger.info("Update object created successfully")
-        
-        # Create new event loop for processing update
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        
-        try:
-            # Process Telegram update
-            logger.debug("Starting update processing")
-            await dp.feed_update(bot=bot, update=update)
-            logger.info("Update processed successfully")
-            
-            return {"status": "ok"}
-            
-        finally:
-            # Clean up the event loop
-            loop.stop()
-            loop.close()
-            
+        await dp.feed_update(bot=bot, update=update)
+        return {"status": "ok"}
     except Exception as e:
-        logger.exception("Error processing webhook: {}", str(e))
+        logger.exception(f"Error processing update: {e}")
         return {"status": "error", "message": str(e)} 
