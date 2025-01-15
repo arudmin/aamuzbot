@@ -14,5 +14,8 @@ COPY .env.example ./.env
 RUN poetry config virtualenvs.create false \
     && poetry install --no-dev --no-interaction --no-ansi
 
+# Открываем порт для вебхуков
+EXPOSE 8000
+
 # Запуск бота
-CMD ["poetry", "run", "bot"] 
+CMD ["poetry", "run", "python", "-m", "src.bot.main"] 

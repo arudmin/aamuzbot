@@ -8,11 +8,13 @@
   ],
   "routes": [
     {
-      "src": "/(.*)",
-      "dest": "/"
+      "src": "/webhook",
+      "dest": "http://localhost:8000/webhook",
+      "methods": ["POST", "GET"]
     }
   ],
   "env": {
-    "BOT_ENV": "prod"
+    "BOT_ENV": "prod",
+    "PORT": "8000"
   }
 } 
