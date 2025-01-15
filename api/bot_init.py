@@ -8,27 +8,41 @@ import sys
 from aiogram.types import Update
 from loguru import logger
 
-# Получаем абсолютный путь к директории src
-SRC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src'))
+# Get the absolute path to the project root directory
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+SRC_DIR = os.path.join(PROJECT_ROOT, 'src')
+
+logger.info("Project root: {}", PROJECT_ROOT)
+logger.info("SRC directory: {}", SRC_DIR)
+logger.info("Current sys.path: {}", sys.path)
+
+# Add both project root and src to Python path
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 if SRC_DIR not in sys.path:
     sys.path.insert(0, SRC_DIR)
 
+logger.info("Updated sys.path: {}", sys.path)
+
 try:
-    from bot.routers.base import base_router
-    from bot.routers.music import music_router
-    from bot.routers.inline import inline_router
-    from bot.config.config import config as bot_config
-    from bot.middlewares.logging import LoggingMiddleware
-    logger.info("Successfully imported bot modules from: {}", SRC_DIR)
-except Exception as e:
-    logger.error("Failed to import bot modules: {}", str(e))
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from src.bot.routers.base import base_router
     from src.bot.routers.music import music_router
     from src.bot.routers.inline import inline_router
     from src.bot.config.config import config as bot_config
     from src.bot.middlewares.logging import LoggingMiddleware
-    logger.info("Successfully imported bot modules using alternative path")
+    logger.info("Successfully imported bot modules using src.bot path")
+except Exception as e:
+    logger.error("Failed to import bot modules using src.bot path: {}", str(e))
+    try:
+        from bot.routers.base import base_router
+        from bot.routers.music import music_router
+        from bot.routers.inline import inline_router
+        from bot.config.config import config as bot_config
+        from bot.middlewares.logging import LoggingMiddleware
+        logger.info("Successfully imported bot modules using bot path")
+    except Exception as e:
+        logger.error("Failed to import bot modules using bot path: {}", str(e))
+        raise ImportError("Could not import bot modules using either path") from e
 
 class Settings(BaseSettings):
     bot_token: str = bot_config.bot_token
