@@ -8,14 +8,27 @@ import sys
 from aiogram.types import Update
 from loguru import logger
 
-# Добавляем путь к исходникам бота
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Получаем абсолютный путь к директории src
+SRC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src'))
+if SRC_DIR not in sys.path:
+    sys.path.insert(0, SRC_DIR)
 
-from src.bot.routers.base import base_router
-from src.bot.routers.music import music_router
-from src.bot.routers.inline import inline_router
-from src.bot.config.config import config as bot_config
-from src.bot.middlewares.logging import LoggingMiddleware
+try:
+    from bot.routers.base import base_router
+    from bot.routers.music import music_router
+    from bot.routers.inline import inline_router
+    from bot.config.config import config as bot_config
+    from bot.middlewares.logging import LoggingMiddleware
+    logger.info("Successfully imported bot modules from: {}", SRC_DIR)
+except Exception as e:
+    logger.error("Failed to import bot modules: {}", str(e))
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from src.bot.routers.base import base_router
+    from src.bot.routers.music import music_router
+    from src.bot.routers.inline import inline_router
+    from src.bot.config.config import config as bot_config
+    from src.bot.middlewares.logging import LoggingMiddleware
+    logger.info("Successfully imported bot modules using alternative path")
 
 class Settings(BaseSettings):
     bot_token: str = bot_config.bot_token
