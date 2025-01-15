@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 from aiogram import Bot, Dispatcher
 from aiogram.types import Update, Message, InlineQuery
+from aiogram.client.session.aiohttp import AiohttpSession
 import os
 import asyncio
 from contextlib import asynccontextmanager
@@ -10,8 +11,11 @@ from contextlib import asynccontextmanager
 # Настраиваем логирование
 logger.add("/tmp/bot.log", rotation="1 MB")
 
+# Создаем сессию для бота
+session = AiohttpSession()
+
 # Инициализируем бота и диспетчер
-bot = Bot(token=os.getenv("BOT_TOKEN"))
+bot = Bot(token=os.getenv("BOT_TOKEN"), session=session)
 dp = Dispatcher()
 
 # Регистрируем хендлеры
@@ -55,7 +59,7 @@ async def lifespan(app: FastAPI):
     
     # Очистка при завершении
     logger.info("Завершение работы бота...")
-    await bot.session.close()
+    await session.close()
 
 # Инициализируем FastAPI с менеджером жизненного цикла
 app = FastAPI(lifespan=lifespan)
