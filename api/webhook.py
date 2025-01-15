@@ -4,6 +4,7 @@ from loguru import logger
 from aiogram import Bot, Dispatcher
 from aiogram.types import Update, Message, InlineQuery
 import os
+import asyncio
 
 # Настраиваем логирование
 logger.add("/tmp/bot.log", rotation="1 MB")
@@ -74,8 +75,16 @@ async def webhook_handler(request: Request):
         # Создаем объект Update из полученных данных
         update = Update(**update_data)
         
-        # Обрабатываем update от Telegram
-        await dp.feed_update(bot=bot, update=update)
+        # Создаем новый event loop для обработки update
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        try:
+            # Обрабатываем update от Telegram
+            loop.run_until_complete(dp.feed_update(bot=bot, update=update))
+        finally:
+            # Закрываем loop после обработки
+            loop.close()
         
         return {"status": "ok"}
         
