@@ -4,6 +4,8 @@ from aiohttp import web
 from pydantic_settings import BaseSettings
 from typing import Optional
 import os
+from aiogram.types import Update, Message
+from aiogram.filters import Command
 
 class Settings(BaseSettings):
     bot_token: str
@@ -30,12 +32,20 @@ def init_bot():
     bot = Bot(token=config.bot_token)
     dp = Dispatcher()
     
+    # Регистрируем обработчики
+    @dp.message(Command("start"))
+    async def cmd_start(message: Message):
+        await message.answer("Привет! Я бот для поиска и скачивания музыки. Используй инлайн режим для поиска.")
+    
     return bot, dp
 
 async def process_update(update_data: dict):
     """Обработка обновления от Telegram."""
     bot, dp = init_bot()
     try:
-        await dp.feed_update(bot, update_data)
+        # Создаем объект Update из словаря
+        update = Update.model_validate(update_data)
+        # Передаем update в диспетчер
+        await dp.feed_update(bot=bot, update=update)
     finally:
         await bot.session.close() 
