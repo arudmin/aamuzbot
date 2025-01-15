@@ -3,19 +3,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 from aiogram import Bot, Dispatcher
 from aiogram.types import Update, Message, InlineQuery
-from aiogram.client.session.aiohttp import AiohttpSession
 import os
 import asyncio
 from contextlib import asynccontextmanager
 
 # Настраиваем логирование
-logger.add("/tmp/bot.log", rotation="1 MB")
-
-# Создаем сессию для бота
-session = AiohttpSession()
+logger.add("/tmp/bot.log", rotation="1 MB", enqueue=True)
 
 # Инициализируем бота и диспетчер
-bot = Bot(token=os.getenv("BOT_TOKEN"), session=session)
+bot = Bot(token=os.getenv("BOT_TOKEN"))
 dp = Dispatcher()
 
 # Регистрируем хендлеры
@@ -24,10 +20,16 @@ async def handle_message(message: Message):
     try:
         logger.info(f"Получено сообщение: {message.text}")
         if message.text == "/start":
+            logger.info("Отправляем приветственное сообщение...")
             await message.answer("Привет! Я бот для поиска и скачивания музыки. Используй инлайн режим для поиска.")
+            logger.info("Приветственное сообщение отправлено")
         
     except Exception as e:
         logger.error(f"Ошибка при обработке сообщения: {e}", exc_info=True)
+        try:
+            await message.answer("Произошла ошибка при обработке сообщения. Попробуйте позже.")
+        except:
+            logger.error("Не удалось отправить сообщение об ошибке", exc_info=True)
 
 @dp.inline_query()
 async def handle_inline_query(query: InlineQuery):
@@ -38,6 +40,7 @@ async def handle_inline_query(query: InlineQuery):
             switch_pm_text="Поиск музыки",
             switch_pm_parameter="search"
         )
+        logger.info("Ответ на инлайн запрос отправлен")
         
     except Exception as e:
         logger.error(f"Ошибка при обработке инлайн запроса: {e}", exc_info=True)
@@ -47,19 +50,24 @@ async def lifespan(app: FastAPI):
     """
     Управление жизненным циклом приложения
     """
-    # Настраиваем вебхук при запуске
-    logger.info("Инициализация бота...")
-    webhook_url = os.getenv("WEBHOOK_URL")
-    if webhook_url:
-        await bot.delete_webhook(drop_pending_updates=True)
-        await bot.set_webhook(url=webhook_url)
-        logger.info(f"Установлен webhook: {webhook_url}")
-    
-    yield
-    
-    # Очистка при завершении
-    logger.info("Завершение работы бота...")
-    await session.close()
+    try:
+        # Настраиваем вебхук при запуске
+        logger.info("Инициализация бота...")
+        webhook_url = os.getenv("WEBHOOK_URL")
+        if webhook_url:
+            await bot.delete_webhook(drop_pending_updates=True)
+            await bot.set_webhook(url=webhook_url)
+            logger.info(f"Установлен webhook: {webhook_url}")
+        
+        yield
+        
+    except Exception as e:
+        logger.error(f"Ошибка в жизненном цикле приложения: {e}", exc_info=True)
+        raise
+    finally:
+        # Очистка при завершении
+        logger.info("Завершение работы бота...")
+        await bot.session.close()
 
 # Инициализируем FastAPI с менеджером жизненного цикла
 app = FastAPI(lifespan=lifespan)
@@ -95,6 +103,7 @@ async def webhook_handler(request: Request):
         
         # Обрабатываем update от Telegram
         await dp.feed_update(bot=bot, update=update)
+        logger.info("Update успешно обработан")
         
         return {"status": "ok"}
         
