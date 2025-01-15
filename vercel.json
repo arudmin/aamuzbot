@@ -9,7 +9,11 @@
     "routes": [
         {
             "src": "/api/webhook",
-            "dest": "api/index.py"
+            "dest": "api/index.py",
+            "methods": ["POST"],
+            "headers": {
+                "Access-Control-Allow-Origin": "*"
+            }
         }
     ]
 } 
