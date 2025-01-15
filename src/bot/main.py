@@ -5,8 +5,10 @@
 и запускает приложение.
 """
 
+import asyncio
 from aiogram import Bot, Dispatcher
-from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
+from aiogram.types import Update
+from aiogram.exceptions import TelegramRetryAfter
 from aiohttp import web
 from bot.config.config import config
 from bot.handlers.base import router as base_router
@@ -47,34 +49,68 @@ async def on_shutdown(bot: Bot) -> None:
     await bot.session.close()
 
 
-def init_app() -> web.Application:
+async def process_update(request: web.Request) -> web.Response:
     """
-    Инициализация приложения.
+    Обрабатывает входящие обновления от Telegram.
+    
+    Args:
+        request: Входящий HTTP запрос
+        
+    Returns:
+        HTTP ответ
+    """
+    bot = request.app["bot"]
+    dp = request.app["dp"]
+    update = Update(**(await request.json()))
+    await dp.feed_update(bot=bot, update=update)
+    return web.Response()
+
+
+async def init_app() -> web.Application:
+    """
+    Инициализирует веб-приложение.
     
     Returns:
         Инициализированное веб-приложение
     """
-    # Инициализируем бота и диспетчер
-    bot = Bot(token=config.bot_token.get_secret_value())
+    # Инициализируем бота
+    bot = Bot(token=config.bot_token)
     dp = Dispatcher()
+    
+    # Настраиваем логирование
+    logger.info("Инициализация бота...")
     
     # Регистрируем обработчики
     dp.include_router(base_router)
     dp.include_router(music_router)
     dp.include_router(inline_router)
     
-    # Создаем веб-приложение
-    app = web.Application()
-    
     # Настраиваем вебхук
-    webhook_requests_handler = SimpleRequestHandler(
-        dispatcher=dp,
-        bot=bot
-    )
-    webhook_requests_handler.register(app, path="/webhook")
+    if config.is_dev:
+        config.setup_ngrok()
     
-    # Добавляем маршруты для скачивания
-    setup_routes(app)
+    # Запускаем бота
+    logger.info(f"Настраиваем вебхук: {config.webhook_url}")
+    
+    # Пробуем установить вебхук с обработкой ошибок
+    while True:
+        try:
+            await bot.set_webhook(url=config.webhook_url)
+            break
+        except TelegramRetryAfter as e:
+            logger.warning(f"Слишком много запросов, ждем {e.retry_after} секунд")
+            await asyncio.sleep(e.retry_after)
+        except Exception as e:
+            logger.error(f"Ошибка при установке вебхука: {e}")
+            raise
+    
+    # Запускаем веб-сервер
+    app = web.Application()
+    app["bot"] = bot
+    app["dp"] = dp
+    
+    # Настраиваем маршруты
+    app.router.add_post(config.webhook_path, process_update)
     
     # Настраиваем запуск и остановку
     dp.startup.register(on_startup)
@@ -84,9 +120,6 @@ def init_app() -> web.Application:
     dp.message.middleware(LoggingMiddleware())
     dp.inline_query.middleware(LoggingMiddleware())
     dp.callback_query.middleware(LoggingMiddleware())
-    
-    # Настраиваем интеграцию с aiohttp
-    setup_application(app, dp, bot=bot)
     
     return app
 

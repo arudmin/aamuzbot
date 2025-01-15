@@ -42,9 +42,13 @@ async def cmd_start(message: Message, command: CommandObject):
         status_message = await message.answer("⏳ Начинаем скачивание...")
 
         # Удаляем сообщение с командой
-        await message.delete()
-        logger.info("Сообщение с командой /start удалено")
+        try:
+            await message.delete()
+            logger.info("Сообщение с командой /start удалено")
+        except Exception as e:
+            logger.warning(f"Не удалось удалить сообщение: {e}")
 
+        # Начинаем скачивание
         logger.info(f"Начинаем скачивание трека {track_id}")
         success = await download_and_send_track(message, track_id, status_message)
         logger.info(f"Скачивание трека {track_id} завершено {'успешно' if success else 'с ошибкой'}")
