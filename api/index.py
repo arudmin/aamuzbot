@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request
 from loguru import logger
-from .bot_init import process_update
+from bot_init import process_update
 
 # Настраиваем логирование
 logger.add("/tmp/bot.log", rotation="1 MB")
