@@ -16,11 +16,12 @@ COPY requirements.txt .
 
 # Установка зависимостей
 RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip
 
 # Копирование исходного кода
 COPY . .
 
-# Установка порта для FastAPI
+# Установка переменных окружения
 ENV PORT=8000
 ENV PYTHONPATH=/app/src
 
