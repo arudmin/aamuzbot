@@ -3,8 +3,12 @@
 """
 
 import asyncio
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent.parent))
+
 from aiogram import Bot
-from bot.config.config import config
+from src.bot.config.config import config
 
 
 async def update_webhook():
@@ -15,7 +19,7 @@ async def update_webhook():
     await bot.delete_webhook()
     
     # Установим новый веб-хук
-    webhook_url = f"{config.webhook_url}/webhook"
+    webhook_url = f"{config.webhook_url}"
     result = await bot.set_webhook(
         url=webhook_url,
         drop_pending_updates=True
