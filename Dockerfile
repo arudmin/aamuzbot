@@ -22,7 +22,7 @@ COPY . .
 
 # Установка порта для FastAPI
 ENV PORT=8000
-ENV PYTHONPATH=/app
+ENV PYTHONPATH=/app/src
 
 # Запуск приложения
-CMD python -m uvicorn src.bot.app:app --host 0.0.0.0 --port $PORT 
+CMD uvicorn bot.app:app --host 0.0.0.0 --port $PORT --app-dir /app/src 
