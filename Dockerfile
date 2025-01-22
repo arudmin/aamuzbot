@@ -6,8 +6,9 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Установка poetry
+# Установка Poetry
 RUN curl -sSL https://install.python-poetry.org | python3 -
+ENV PATH="/root/.local/bin:$PATH"
 
 # Установка рабочей директории
 WORKDIR /app
@@ -25,8 +26,8 @@ COPY . .
 # Установка проекта
 RUN poetry install --no-interaction --no-ansi --no-dev
 
-# Порт для FastAPI (по умолчанию для Fly.io)
+# Установка порта для FastAPI
 ENV PORT=8000
 
 # Запуск приложения
-CMD poetry run uvicorn api.index:app --host 0.0.0.0 --port $PORT 
+CMD uvicorn src.bot.app:app --host 0.0.0.0 --port $PORT 
