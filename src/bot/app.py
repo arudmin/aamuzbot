@@ -80,4 +80,7 @@ def init_app() -> web.Application:
     # Настройка Middleware
     setup_application(app, dp, bot=bot)
     
-    return app 
+    return app
+
+# Создаем экземпляр приложения на уровне модуля
+app = init_app() 
