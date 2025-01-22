@@ -43,33 +43,93 @@ cp .env.example .env
 BOT_ENV=dev poetry run bot
 ```
 
-### Продакшн режим на Vercel (prod)
+### Деплой на Railway.app
 
-1. Создайте аккаунт на [Vercel](https://vercel.com) если еще нет
+1. Создайте аккаунт на [Railway](https://railway.app)
 
-2. Установите Vercel CLI:
+2. Установите Railway CLI:
 ```bash
-npm i -g vercel
+npm i -g @railway/cli
 ```
 
-3. Залогиньтесь в Vercel:
+3. Авторизуйтесь в Railway:
 ```bash
-vercel login
+railway login
 ```
 
-4. Настройте проект на Vercel:
-   - Подключите GitHub репозиторий через веб-интерфейс Vercel
-   - В настройках проекта добавьте переменные окружения:
-     - `BOT_TOKEN` - токен вашего Telegram бота
-     - `YANDEX_MUSIC_TOKEN` - токен Яндекс.Музыки
-     - `BOT_ENV=prod` - режим работы
-     - `WEBHOOK_HOST` - URL вашего приложения на Vercel (например, https://your-app.vercel.app)
-
-5. Деплой произойдет автоматически после пуша в репозиторий
-
-6. Установите вебхук для бота:
+4. Создайте новый проект:
 ```bash
-curl -X POST https://api.telegram.org/bot<BOT_TOKEN>/setWebhook -H "Content-Type: application/json" -d '{"url": "https://your-app.vercel.app/api/webhook"}'
+railway init
+```
+
+5. Добавьте переменные окружения:
+```bash
+railway variables set BOT_TOKEN="your_telegram_bot_token"
+railway variables set YANDEX_MUSIC_TOKEN="your_yandex_music_token"
+railway variables set WEBHOOK_SECRET="your_webhook_secret"
+railway variables set BOT_ENV="prod"
+```
+
+6. Разверните приложение:
+```bash
+railway up
+```
+
+7. Получите URL приложения:
+```bash
+railway domain
+```
+
+8. Установите вебхук для бота (замените YOUR_APP_URL на полученный URL):
+```bash
+curl -X POST "https://api.telegram.org/bot$BOT_TOKEN/setWebhook" \
+     -H "Content-Type: application/json" \
+     -d '{"url": "https://YOUR_APP_URL/webhook", "secret_token": "your_webhook_secret"}'
+```
+
+### Деплой на Fly.io
+
+1. Установите Fly CLI:
+```bash
+# На Linux/WSL
+curl -L https://fly.io/install.sh | sh
+
+# На macOS
+brew install flyctl
+```
+
+2. Авторизуйтесь в Fly.io:
+```bash
+fly auth login
+```
+
+3. Создайте приложение:
+```bash
+fly apps create aamuzbot
+```
+
+4. Настройте секреты:
+```bash
+fly secrets set BOT_TOKEN="your_telegram_bot_token"
+fly secrets set YANDEX_MUSIC_TOKEN="your_yandex_music_token"
+fly secrets set WEBHOOK_SECRET="your_webhook_secret"
+```
+
+5. Разверните приложение:
+```bash
+fly deploy
+```
+
+6. Получите URL приложения:
+```bash
+fly apps list
+```
+
+7. Установите вебхук для бота (замените YOUR_APP_NAME на имя вашего приложения):
+```bash
+curl -X POST "https://api.telegram.org/bot$BOT_TOKEN/setWebhook" \
+     -H "Content-Type: application/json" \
+     -d '{"url": "https://YOUR_APP_NAME.fly.dev/webhook", "secret_token": "your_webhook_secret"}'
 ```
 
 ## Структура проекта
