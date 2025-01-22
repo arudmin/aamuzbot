@@ -13,14 +13,17 @@ class Settings(BaseSettings):
     """Настройки бота."""
     # Основные настройки
     bot_token: str
-    bot_env: str = "dev"  # dev или prod
+    bot_env: str = "prod"  # dev или prod
     
     # Настройки для разработки
     ngrok_auth_token: Optional[str] = None
     ngrok_tunnel_url: Optional[str] = None
     
     # Настройки для продакшена
-    webhook_host: Optional[str] = None  # URL в формате https://your-app.vercel.app
+    webhook_host: str = "https://aamuzbot.railway.app"
+    webhook_path: str = "/webhook"
+    webapp_host: str = "0.0.0.0"
+    webapp_port: int = 8080
     
     # Настройки Яндекс.Музыки
     yandex_music_token: str
@@ -31,11 +34,9 @@ class Settings(BaseSettings):
         return self.bot_env.lower() == "prod"
         
     @property
-    def webhook_url(self) -> Optional[str]:
+    def webhook_url(self) -> str:
         """Возвращает URL для вебхука."""
-        if self.is_prod and self.webhook_host:
-            return f"{self.webhook_host}/api/webhook"
-        return self.ngrok_tunnel_url
+        return f"{self.webhook_host}{self.webhook_path}"
         
     class Config:
         env_file = ".env"
