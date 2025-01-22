@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     webhook_host: str = "https://aamuzbot.railway.app"
     webhook_path: str = "/webhook"
     webapp_host: str = "0.0.0.0"
-    webapp_port: int = 8080
+    webapp_port: int = int(os.getenv("PORT", "8000"))  # Railway предоставляет порт через переменную окружения PORT
     
     # Настройки Яндекс.Музыки
     yandex_music_token: str
