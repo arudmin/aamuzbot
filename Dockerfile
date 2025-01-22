@@ -4,6 +4,8 @@ FROM python:3.10-slim
 RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
+    ffmpeg \
+    libavcodec-extra \
     && rm -rf /var/lib/apt/lists/*
 
 # Установка рабочей директории
@@ -20,6 +22,7 @@ COPY . .
 
 # Установка порта для FastAPI
 ENV PORT=8000
+ENV PYTHONPATH=/app
 
 # Запуск приложения
-CMD uvicorn src.bot.app:app --host 0.0.0.0 --port $PORT 
+CMD python -m uvicorn src.bot.app:app --host 0.0.0.0 --port $PORT 
