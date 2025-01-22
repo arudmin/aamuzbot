@@ -24,10 +24,10 @@ async def on_startup(bot: Bot) -> None:
         bot (Bot): Экземпляр бота
     """
     await bot.set_webhook(
-        url=f"{config.webhook_url}/webhook",
+        url=config.webhook_url,
         drop_pending_updates=True
     )
-    logger.info(f"Установлен вебхук: {config.webhook_url}/webhook")
+    logger.info(f"Установлен вебхук: {config.webhook_url}")
 
 
 async def on_shutdown(bot: Bot) -> None:
