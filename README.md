@@ -36,31 +36,33 @@ docker build -t aamuzbot .
 docker run -p 8000:8000 --env-file .env aamuzbot
 ```
 
-### GitHub Deployment
+### Railway Deployment
 
-1. Форкните репозиторий на GitHub
-
-2. В настройках репозитория:
-   - Перейдите в Settings -> Secrets and variables -> Actions
-   - Добавьте следующие секреты:
-     - `BOT_TOKEN`: Ваш токен Telegram бота
-     - `YANDEX_MUSIC_TOKEN`: Ваш токен Яндекс.Музыки
-     - `WEBHOOK_SECRET`: Секретный токен для вебхука
-
-3. Включите GitHub Packages:
-   - Перейдите в Settings -> Packages
-   - Убедитесь, что GitHub Packages включены для репозитория
-
-4. Push изменения в ветку main для автоматической сборки и публикации Docker образа:
+1. Убедитесь, что у вас установлен Railway CLI и вы авторизованы:
 ```bash
-git add .
-git commit -m "Initial commit"
-git push origin main
+railway login
 ```
 
-5. После успешной сборки, Docker образ будет доступен в GitHub Container Registry:
+2. Создайте новый проект в Railway:
 ```bash
-docker pull ghcr.io/yourusername/aamuzbot:main
+railway init
+```
+
+3. Добавьте необходимые переменные окружения в Railway:
+   - `BOT_TOKEN`: Ваш токен Telegram бота
+   - `YANDEX_MUSIC_TOKEN`: Ваш токен Яндекс.Музыки
+   - `WEBHOOK_URL`: URL вашего приложения на Railway (например, https://your-app.railway.app)
+   - `WEBHOOK_PATH`: Путь для вебхука (например, /webhook)
+   - `WEBAPP_HOST`: 0.0.0.0
+   - `WEBAPP_PORT`: $PORT (Railway автоматически установит)
+
+4. Деплой через GitHub:
+   - Подключите ваш GitHub репозиторий в Railway Dashboard
+   - При каждом пуше в main ветку, Railway автоматически соберет и задеплоит приложение
+
+5. Или деплой через CLI:
+```bash
+railway up
 ```
 
 ## Структура проекта
