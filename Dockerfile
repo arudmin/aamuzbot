@@ -6,25 +6,17 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Установка Poetry
-RUN curl -sSL https://install.python-poetry.org | python3 -
-ENV PATH="/root/.local/bin:$PATH"
-
 # Установка рабочей директории
 WORKDIR /app
 
 # Копирование файлов зависимостей
-COPY pyproject.toml poetry.lock ./
+COPY requirements.txt .
 
 # Установка зависимостей
-RUN poetry config virtualenvs.create false \
-    && poetry install --no-interaction --no-ansi --no-root --no-dev
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Копирование исходного кода
 COPY . .
-
-# Установка проекта
-RUN poetry install --no-interaction --no-ansi --no-dev
 
 # Установка порта для FastAPI
 ENV PORT=8000
