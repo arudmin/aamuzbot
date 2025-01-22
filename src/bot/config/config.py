@@ -20,9 +20,9 @@ class Settings(BaseSettings):
     ngrok_tunnel_url: Optional[str] = None
     
     # Настройки для продакшена
-    webhook_host: str = "https://aamuzbot.railway.app"
-    webhook_path: str = "/webhook"
-    webapp_host: str = "0.0.0.0"
+    webhook_host: str = os.getenv("WEBHOOK_HOST")
+    webhook_path: str = os.getenv("WEBHOOK_PATH", "/webhook")
+    webapp_host: str = os.getenv("WEBAPP_HOST", "0.0.0.0")
     webapp_port: int = int(os.getenv("PORT", "8000"))  # Railway предоставляет порт через переменную окружения PORT
     
     # Настройки Яндекс.Музыки
