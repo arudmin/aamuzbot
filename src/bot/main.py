@@ -66,63 +66,31 @@ async def process_update(request: web.Request) -> web.Response:
     return web.Response()
 
 
-async def init_app() -> web.Application:
-    """
-    Инициализирует веб-приложение.
-    
-    Returns:
-        Инициализированное веб-приложение
-    """
-    # Инициализируем бота
-    bot = Bot(token=config.bot_token)
-    dp = Dispatcher()
-    
-    # Настраиваем логирование
-    logger.info("Инициализация бота...")
-    
-    # Регистрируем обработчики
-    dp.include_router(base_router)
-    dp.include_router(music_router)
-    dp.include_router(inline_router)
-    
-    # Настраиваем вебхук
-    if config.is_dev:
-        config.setup_ngrok()
-    
-    # Запускаем бота
-    logger.info(f"Настраиваем вебхук: {config.webhook_url}")
-    
-    # Пробуем установить вебхук с обработкой ошибок
-    while True:
-        try:
-            await bot.set_webhook(url=config.webhook_url)
-            break
-        except TelegramRetryAfter as e:
-            logger.warning(f"Слишком много запросов, ждем {e.retry_after} секунд")
-            await asyncio.sleep(e.retry_after)
-        except Exception as e:
-            logger.error(f"Ошибка при установке вебхука: {e}")
-            raise
-    
-    # Запускаем веб-сервер
-    app = web.Application()
-    app["bot"] = bot
-    app["dp"] = dp
-    
-    # Настраиваем маршруты
-    app.router.add_post(config.webhook_path, process_update)
-    
-    # Настраиваем запуск и остановку
-    dp.startup.register(on_startup)
-    dp.shutdown.register(on_shutdown)
-    
-    # Добавляем мидлвари
-    dp.message.middleware(LoggingMiddleware())
-    dp.inline_query.middleware(LoggingMiddleware())
-    dp.callback_query.middleware(LoggingMiddleware())
-    
-    return app
+# Инициализируем бота и диспетчер на уровне модуля
+bot = Bot(token=config.bot_token)
+dp = Dispatcher()
 
+# Регистрируем обработчики
+dp.include_router(base_router)
+dp.include_router(music_router)
+dp.include_router(inline_router)
+
+# Добавляем мидлвари
+dp.message.middleware(LoggingMiddleware())
+dp.inline_query.middleware(LoggingMiddleware())
+dp.callback_query.middleware(LoggingMiddleware())
+
+# Создаем приложение
+app = web.Application()
+app["bot"] = bot
+app["dp"] = dp
+
+# Настраиваем маршруты
+app.router.add_post(config.webhook_path, process_update)
+
+# Настраиваем запуск и остановку
+dp.startup.register(on_startup)
+dp.shutdown.register(on_shutdown)
 
 # Для uvicorn
 app = init_app() 
