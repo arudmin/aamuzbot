@@ -124,17 +124,5 @@ async def init_app() -> web.Application:
     return app
 
 
-def main():
-    """
-    Точка входа в приложение.
-    """
-    # Запускаем приложение
-    web.run_app(
-        init_app(),
-        host=config.webapp_host,
-        port=config.webapp_port
-    )
-
-
-if __name__ == "__main__":
-    main() 
+# Для uvicorn
+app = init_app() 
