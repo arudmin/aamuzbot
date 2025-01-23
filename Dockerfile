@@ -26,4 +26,4 @@ ENV PORT=8000
 ENV PYTHONPATH=/app/src
 
 # Запуск приложения
-CMD uvicorn bot.main:app --host 0.0.0.0 --port $PORT --app-dir /app/src 
+CMD python -m src.bot.main 
